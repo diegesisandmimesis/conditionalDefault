@@ -4,7 +4,8 @@
 // Version 1.0
 // Copyright 2022 Diegesis & Mimesis
 //
-// This is a very simple demonstration "game" for the conditionalDefault library.
+// This is a very simple demonstration "game" for the conditionalDefault
+// library.
 //
 // It can be compiled via the included makefile with
 //
@@ -21,29 +22,94 @@
 
 #include "conditionalDefault.h"
 
-versionInfo: GameID
-        name = 'conditionalDefault Library Demo Game'
-        byline = 'Diegesis & Mimesis'
-        desc = 'Demo game for the conditionalDefault library. '
-        version = '1.0'
-        IFID = '12345'
-	showAbout() {
-		"This is a simple test game that demonstrates the features
-		of the conditionalDefault library.
-		<.p>
-		Consult the README.txt document distributed with the library
-		source for a quick summary of how to use the library in your
-		own games.
-		<.p>
-		The library source is also extensively commented in a way
-		intended to make it as readable as possible. ";
-	}
-;
-gameMain: GameMainDef
-	initialPlayerChar = me
-	inlineCommand(cmd) { "<b>&gt;<<toString(cmd).toUpper()>></b>"; }
-	printCommand(cmd) { "<.p>\n\t<<inlineCommand(cmd)>><.p> "; }
+versionInfo: GameID;
+gameMain: GameMainDef initialPlayerChar = me;
+
+modify playerActionMessages
+	cantFiddleWithCards = '{You/He} can\'t fiddle with the cards
+		during a game. '
+
+	cantNotInGame = '{You/He} can\'t do that because {you/he} {are}n\'t
+		playing a game. '
+
+	alreadyShuffled = 'The cards have already been shuffled. '
+	alreadyDealt = 'The cards have already been dealt. '
+
+	cantShuffleThat = '{You/He} can\'t shuffle {that dobj/him}. '
+	okayShuffle = '{You/He} shuffle{s} the cards. '
+
+	cantDealThat = '{You/He} can\'t deal {that dobj/him}. '
+	okayDeal = '{You/He} deal{s} the cards. '
+
+	okayToggleGame = '{You/He} are now <<((deck.gameFlag) ? '' : 'not')>>
+		playing a game. '
 ;
 
-startRoom: Room 'Void' "This is a featureless void.";
+startRoom: Room 'Void' "This is a featureless void. ";
 +me: Person;
++deck: Thing 'deck (of) cards' 'deck of cards'
+	"It's a deck of playing cards. "
+
+	gameFlag = nil
+	shuffleFlag = nil
+	dealFlag = nil
+
+	dobjFor(Default) {
+		verify() {
+			if(gameFlag == true)
+				illogicalDefault(&cantFiddleWithCards);
+		}
+	}
+
+	dobjFor(Examine) { verify() { inherited(); } }
+	dobjFor(Shuffle) {
+		verify() {
+			if(gameFlag == nil)
+				illogicalNow(&cantNotInGame);
+			if(shuffleFlag == true)
+				illogicalNow(&alreadyShuffled);
+		}
+		action() {
+			defaultReport(&okayShuffle);
+			shuffleFlag = true;
+		}
+	}
+	dobjFor(Deal) {
+		verify() {
+			if(gameFlag == nil)
+				illogicalNow(&cantNotInGame);
+			if(dealFlag == true)
+				illogicalNow(&alreadyDealt);
+		}
+		action() {
+			defaultReport(&okayDeal);
+			dealFlag = true;
+		}
+	}
+;
+
+DefineTAction(Shuffle);
+VerbRule(Shuffle) 'shuffle' singleDobj : ShuffleAction
+        verbPhrase = 'shuffle/shuffling (what)'
+;
+modify Thing
+	dobjFor(Shuffle) { verify() { illogical(&cantShuffleThat); } }
+;
+
+DefineTAction(Deal);
+VerbRule(Deal) 'deal' singleDobj : DealAction
+        verbPhrase = 'deal/dealing (what)'
+;
+modify Thing
+	dobjFor(Deal) { verify() { illogical(&cantDealThat); } }
+;
+
+DefineSystemAction(ToggleGame)
+	execSystemAction() {
+		deck.gameFlag &= true;
+		defaultReport(&okayToggleGame);
+	}
+;
+VerbRule(ToggleGame) 'toggle' 'game' : ToggleGameAction
+	verbPhrase = 'toggle/toggling game'
+;
