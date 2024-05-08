@@ -2,8 +2,6 @@
 // conditionalDefault.h
 //
 
-#define illogicalDefault(msg, params...) \
-	(gAction.setConditionalDefault() && \
-	illogicalNow(msg, ##params))
+#define ignoreDefault (gAction.setConditionalDefault())
 
 #define CONDITIONAL_DEFAULT_H

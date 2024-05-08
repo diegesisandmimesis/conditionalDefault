@@ -57,7 +57,9 @@ startRoom: Room 'Void' "This is a featureless void. ";
 	dobjFor(Default) {
 		verify() {
 			if(gameFlag == true)
-				illogicalDefault(&cantFiddleWithCards);
+				illogicalNow(&cantFiddleWithCards);
+			else
+				ignoreDefault;
 		}
 	}
 
@@ -106,7 +108,7 @@ modify Thing
 
 DefineSystemAction(ToggleGame)
 	execSystemAction() {
-		deck.gameFlag &= true;
+		deck.gameFlag = !deck.gameFlag;
 		defaultReport(&okayToggleGame);
 	}
 ;
